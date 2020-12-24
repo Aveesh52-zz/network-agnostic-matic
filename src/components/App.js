@@ -5,6 +5,7 @@ import Web3 from 'web3'
 import Token from '../abi/erc20.json';
 import Biconomy from "@biconomy/mexa";
 import { Button, Form , Input,Card, Icon, Image } from 'semantic-ui-react';
+import { use } from 'chai';
 let sigUtil = require("eth-sig-util");
 
 const domainType = [
@@ -51,7 +52,7 @@ class App extends Component {
         await provider.enable();
         if (provider.networkVersion == "80001") {
           domainData.chainId = 80001;
-          const biconomy = new Biconomy(window.ethereum,{dappId:"c1536486-660e-45e3-9afc-0204787ebc01",apiKey:"2_nlU66Fd.56497743-f42d-4f05-be11-e2eef6f911cb", debug:true});
+          const biconomy = new Biconomy(window.ethereum,{apiKey:"2_nlU66Fd.56497743-f42d-4f05-be11-e2eef6f911cb", debug:true, strictMode:true}  );
   
         const web3 = new Web3(biconomy);
         this.setState({web3:web3});
@@ -64,8 +65,11 @@ class App extends Component {
           const ethSwap =  this.state.web3.eth.Contract(Token, "0x26507AbcE1C604a8116896FA44B823E74f6c9533");
           this.setState({ ethSwap:ethSwap });
           console.log(this.state.ethSwap);
-    
-        console.log(this.state.ethSwap);
+          let bal =  this.state.ethSwap.methods
+          .balanceOf(this.state.account)
+         .estimateGas({from:this.state.account});
+         console.log(bal);
+
         console.log("Sending meta transaction");
         let userAddress = this.state.account;
         console.log(this.state.ethSwap);
@@ -310,7 +314,7 @@ class App extends Component {
         console.log(s);
         console.log(v);
 
-
+     
         let output = await this.sendSignedTransaction(userAddress, functionSignature, r, s, v);
         console.log(output);
 
@@ -387,18 +391,25 @@ class App extends Component {
   console.log(userAddress);
   console.log(functionData);
   console.log(r);
-        // let gasLimit = await this.state.ethSwap.methods
-        //   .executeMetaTransaction(userAddress, functionData, r, s, v)
-        //  .estimateGas({from: "0x720E1fa107A1Df39Db4E78A3633121ac36Bec132"});
-        let gasPrice = await this.state.web3.eth.getGasPrice();
-        // console.log(gasLimit);
+  console.log(s);
+  console.log(v);
+  console.log(this.state.ethSwap);
+  console.log(this.state.ethSwap.methods
+    .executeMetaTransaction(userAddress, functionData, r, s, v)
+   .estimateGas({from:userAddress}));
+
+        let gasLimit = await this.state.ethSwap.methods
+          .executeMetaTransaction(userAddress, functionData, r, s, v)
+         .estimateGas({from:userAddress});
+         let gasPrice = await this.state.web3.eth.getGasPrice();
+         console.log(gasLimit);
         console.log(gasPrice);
         let tx = await this.state.ethSwap.methods
           .executeMetaTransaction(userAddress, functionData, r, s, v)
           .send({
             from: userAddress,
-            gasPrice:this.state.web3.utils.toHex(gasPrice),
-            gasLimit:this.state.web3.utils.toHex(500000)
+            gasPrice:gasPrice,
+            gasLimit:gasLimit
           });
 
         tx.on("transactionHash", function(hash) {

@@ -338,7 +338,7 @@
 		"payable": false,
 		"stateMutability": "view",
 		"type": "function"
-	},
+	}	,
 	{
 		"constant": true,
 		"inputs": [],
