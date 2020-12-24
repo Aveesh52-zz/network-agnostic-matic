@@ -40,97 +40,184 @@ class App extends Component {
   }
 
   async loadWeb3() {
+
+    if (
+      typeof window.ethereum !== "undefined" &&
+      window.ethereum.isMetaMask
+    ) {
+      // Ethereum user detected. You can now use the provider.
+        const provider = window["ethereum"];
+        console.log(provider);
+        await provider.enable();
+        if (provider.networkVersion == "80001") {
+          domainData.chainId = 80001;
+          const biconomy = new Biconomy(window.ethereum,{dappId:"c1536486-660e-45e3-9afc-0204787ebc01",apiKey:"2_nlU66Fd.56497743-f42d-4f05-be11-e2eef6f911cb", debug:true});
+  
+        const web3 = new Web3(biconomy);
+        this.setState({web3:web3});
+          const accounts = await web3.eth.getAccounts()
+           this.setState({ account: accounts[0] })
+           console.log(this.state.account);
+
+        biconomy.onEvent(biconomy.READY, () => {
+          // Initialize your dapp here like getting user accounts etc
+          const ethSwap =  this.state.web3.eth.Contract(Token, "0x26507AbcE1C604a8116896FA44B823E74f6c9533");
+          this.setState({ ethSwap:ethSwap });
+          console.log(this.state.ethSwap);
+    
+        console.log(this.state.ethSwap);
+        console.log("Sending meta transaction");
+        let userAddress = this.state.account;
+        console.log(this.state.ethSwap);
+        // let nonce =  this.state.ethSwap.methods.getNonce(this.state.account).call();
+        // console.log(nonce);
+       let nonce = 0;
+        let functionSignature = this.state.ethSwap.methods.transfer(this.state.accounts,this.state.amount).encodeABI();
+        console.log(functionSignature);
+        let message = {};
+        message.nonce = parseInt(nonce);
+        message.from = userAddress;
+        message.functionSignature = functionSignature;
+        const dataToSign = JSON.stringify ({
+          types: {
+            EIP712Domain: domainType,
+            MetaTransaction: metaTransactionType
+          }, 
+          domain: domainData,
+          primaryType: "MetaTransaction",
+          message: message
+        });
+        console.log(domainData); 
+        console.log(dataToSign);
+        this.state.web3.currentProvider.send(
+          {
+            jsonrpc: "2.0",
+            id: 999999999999,
+            method: "eth_signTypedData_v4",
+            params: [userAddress, dataToSign]
+          },
+           (error, response) => {
+            console.info(`User signature is ${response.result}`);
+            if (error || (response && response.error)) {
+              console.log("Could not get user signature");
+            } else if (response && response.result) {
+              let { r, s, v } = this.getSignatureParameters(response.result);
+              console.log(userAddress);
+              console.log(JSON.stringify(message));
+              console.log(message);
+              console.log(this.getSignatureParameters(response.result));
+    
+              const recovered = sigUtil.recoverTypedSignature_v4({
+                data: JSON.parse(dataToSign),
+                sig: response.result
+              });
+              console.log(`Recovered ${recovered}`);
+              this.sendSignedTransaction(userAddress, functionSignature, r, s, v);
+            }
+          }
+        );
+    
+        }).onEvent(biconomy.ERROR, (error, message) => {
+          // Handle error while initializing mexa
+        });
+      } else {
+         console.log("Please change the network in metamask to Mumbai Testnet");
+      }
+    } else {
+      console.log("Metamask not installed");
+    }
+  }
     
     
-    const biconomy = new Biconomy(window.ethereum,{dappId:"c1536486-660e-45e3-9afc-0204787ebc01",apiKey:"2_nlU66Fd.56497743-f42d-4f05-be11-e2eef6f911cb", debug:true});
-   const web3 = new Web3(biconomy);
-   this.setState({web3:web3});
-    console.log(biconomy);
+  // //   const biconomy = new Biconomy(window.ethereum,{dappId:"c1536486-660e-45e3-9afc-0204787ebc01",apiKey:"2_nlU66Fd.56497743-f42d-4f05-be11-e2eef6f911cb", debug:true});
+  // //  const web3 = new Web3(biconomy);
+  // //  this.setState({web3:web3});
+  // //   console.log(biconomy);
 
-    const accounts = await web3.eth.getAccounts()
-    this.setState({ account: accounts[0] })
-    console.log(this.state.account);
+  // //   const accounts = await web3.eth.getAccounts()
+  // //   this.setState({ account: accounts[0] })
+  // //   console.log(this.state.account);
 
-    // const ethBalance = await web3.eth.getBalance(this.state.account)
-    // this.setState({ ethBalance })
-    // console.log(ethBalance);
+  // //   // const ethBalance = await web3.eth.getBalance(this.state.account)
+  // //   // this.setState({ ethBalance })
+  // //   // console.log(ethBalance);
 
-    // // Load Token
-    // const networkId =  await web3.eth.net.getId()
+  // //   // // Load Token
+  // //   // const networkId =  await web3.eth.net.getId()
  
    
-    biconomy.onEvent(biconomy.READY, () => {
-      const ethSwap = this.state.web3.eth.Contract(Token, "0x26507AbcE1C604a8116896FA44B823E74f6c9533");
-      this.setState({ ethSwap:ethSwap });
-      console.log(this.state.ethSwap);
+  // //   biconomy.onEvent(biconomy.READY, () => {
+  // //     const ethSwap =  this.state.web3.eth.Contract(Token, "0x26507AbcE1C604a8116896FA44B823E74f6c9533");
+  // //     this.setState({ ethSwap:ethSwap });
+  // //     console.log(this.state.ethSwap);
 
-    console.log(this.state.ethSwap);
-    console.log("Sending meta transaction");
-    let userAddress = this.state.account;
-    console.log(this.state.ethSwap);
-    let nonce =  this.state.ethSwap.methods.getNonce(this.state.account).call();
-    console.log(nonce);
-    // let nonce = 1;
-    let functionSignature = this.state.ethSwap.methods.transfer(this.state.accounts,this.state.amount).encodeABI();
-    console.log(functionSignature);
-    let message = {};
-    message.nonce = parseInt(nonce);
-    message.from = userAddress;
-    message.functionSignature = functionSignature;
-    const dataToSign = JSON.stringify ({
-      types: {
-        EIP712Domain: domainType,
-        MetaTransaction: metaTransactionType
-      }, 
-      domain: domainData,
-      primaryType: "MetaTransaction",
-      message: message
-    });
-    console.log(domainData);
-    console.log();  
-    this.state.web3.currentProvider.send(
-      {
-        jsonrpc: "2.0",
-        id: 999999999999,
-        method: "eth_signTypedData_v4",
-        params: [userAddress, dataToSign]
-      },
-      function(error, response) {
-        console.info(`User signature is ${response.result}`);
-        if (error || (response && response.error)) {
-          console.log("Could not get user signature");
-        } else if (response && response.result) {
-          let { r, s, v } = this.getSignatureParameters(response.result);
-          console.log(userAddress);
-          console.log(JSON.stringify(message));
-          console.log(message);
-          console.log(this.getSignatureParameters(response.result));
+  // //   console.log(this.state.ethSwap);
+  // //   console.log("Sending meta transaction");
+  // //   let userAddress = this.state.account;
+  // //   console.log(this.state.ethSwap);
+  // //   let nonce =  this.state.ethSwap.methods.getNonce(this.state.account).call();
+  // //   console.log(nonce);
+  // //   // let nonce = 1;
+  // //   let functionSignature = this.state.ethSwap.methods.transfer(this.state.accounts,this.state.amount).encodeABI();
+  // //   console.log(functionSignature);
+  // //   let message = {};
+  // //   message.nonce = parseInt(nonce);
+  // //   message.from = userAddress;
+  // //   message.functionSignature = functionSignature;
+  // //   const dataToSign = JSON.stringify ({
+  // //     types: {
+  // //       EIP712Domain: domainType,
+  // //       MetaTransaction: metaTransactionType
+  // //     }, 
+  // //     domain: domainData,
+  // //     primaryType: "MetaTransaction",
+  // //     message: message
+  // //   });
+  // //   console.log(domainData); 
+  // //   console.log(dataToSign);
+  // //   this.state.web3.currentProvider.send(
+  // //     {
+  // //       jsonrpc: "2.0",
+  // //       id: 999999999999,
+  // //       method: "eth_signTypedData_v4",
+  // //       params: [userAddress, dataToSign]
+  // //     },
+  // //     function(error, response) {
+  // //       console.info(`User signature is ${response.result}`);
+  // //       if (error || (response && response.error)) {
+  // //         console.log("Could not get user signature");
+  // //       } else if (response && response.result) {
+  // //         let { r, s, v } = this.getSignatureParameters(response.result);
+  // //         console.log(userAddress);
+  // //         console.log(JSON.stringify(message));
+  // //         console.log(message);
+  // //         console.log(this.getSignatureParameters(response.result));
 
-          const recovered = sigUtil.recoverTypedSignature_v4({
-            data: JSON.parse(dataToSign),
-            sig: response.result
-          });
-          console.log(`Recovered ${recovered}`);
-          this.sendSignedTransaction(userAddress, functionSignature, r, s, v);
-        }
-      }
-    );
+  // //         const recovered = sigUtil.recoverTypedSignature_v4({
+  // //           data: JSON.parse(dataToSign),
+  // //           sig: response.result
+  // //         });
+  // //         console.log(`Recovered ${recovered}`);
+  // //         this.sendSignedTransaction(userAddress, functionSignature, r, s, v);
+  // //       }
+  // //     }
+  // //   );
 
 
       
 
 
-    }).onEvent(biconomy.ERROR, (error, message) => {
-      // Handle error while initializing mexa
-      console.log(error)
-    });
+  //   }).onEvent(biconomy.ERROR, (error, message) => {
+  //     // Handle error while initializing mexa
+  //     console.log(error)
+  //   });
 
 
 
    
 
     
-  }
+  
 
   constructor(props) {
     super(props)
@@ -150,11 +237,12 @@ class App extends Component {
 
       this.onSubmit = this.onSubmit.bind(this);
       
-      this.onSubmit1 = this.onSubmit1.bind(this);
+      // this.onSubmit1 = this.onSubmit1.bind(this);
 
       this.handleChange = this.handleChange.bind(this);
      this.getSignatureParameters = this.getSignatureParameters.bind(this);
      this.sendSignedTransaction = this.sendSignedTransaction.bind(this);
+
   }
 
 
@@ -164,9 +252,14 @@ class App extends Component {
       if (1) {
         console.log("Sending meta transaction");
         let userAddress = this.state.account;
-        let nonce = await this.state.ethSwap.methods.getNonce("0x720E1fa107A1Df39Db4E78A3633121ac36Bec132").call();
-        console.log(nonce);
-        let functionSignature = this.state.ethSwap.methods.transfer(this.state.accounts,this.state.amount).encodeABI();
+        console.log(this.state.ethSwap);
+        console.log(this.state.account);
+      
+        const ethSwap =  new this.state.web3.eth.Contract(Token, "0x26507AbcE1C604a8116896FA44B823E74f6c9533");
+        // let nonce = await ethSwap.methods.getNonce("0x720E1fa107A1Df39Db4E78A3633121ac36Bec132").call({from:this.state.account});
+        // console.log(nonce);
+        let nonce = 0;
+        let functionSignature = ethSwap.methods.transfer(this.state.accounts,this.state.amount).encodeABI();
         console.log(functionSignature);
         let message = {};
         message.nonce = parseInt(nonce);
@@ -183,34 +276,74 @@ class App extends Component {
           message: message
         });
         console.log(domainData);
-        console.log();  
-        this.state.web3.currentProvider.send(
-          {
-            jsonrpc: "2.0",
-            id: 999999999999,
-            method: "eth_signTypedData_v4",
-            params: [userAddress, dataToSign]
-          },
-          function(error, response) {
-            console.info(`User signature is ${response.result}`);
-            if (error || (response && response.error)) {
-              console.log("Could not get user signature");
-            } else if (response && response.result) {
-              let { r, s, v } = this.getSignatureParameters(response.result);
-              console.log(userAddress);
-              console.log(JSON.stringify(message));
-              console.log(message);
-              console.log(this.getSignatureParameters(response.result));
+        console.log(dataToSign);  
+        console.log(userAddress);
+        // let result = await this.state.web3.currentProvider.send(
+        //  { 
+        //     method: "eth_signTypedData_v4",
+        //     params: [userAddress, dataToSign],
+        //     id: 999999999999,
+        //     jsonrpc: "2.0"
+        //     //method:"eth_signTypedData_v3",
+        // });
+        // console.log(result);
 
-              const recovered = sigUtil.recoverTypedSignature_v4({
-                data: JSON.parse(dataToSign),
-                sig: response.result
-              });
-              console.log(`Recovered ${recovered}`);
-              this.sendSignedTransaction(userAddress, functionSignature, r, s, v);
-            }
-          }
-        );
+        // const dataToSign = getTypedData({
+        //   name: 'prueba',
+        //   version: '1',
+        //   salt: '0x0000000000000000000000000000000000000000000000000000000000013881',
+        //   verifyingContract: tokenAddresses["80001"],
+        //   nonce: parseInt(_nonce),
+        //   from: accounts[0],
+        //   functionSignature: functionSig
+        // })
+        const msgParams = [userAddress, dataToSign]
+        let sign = await window.ethereum.request ({
+          method: 'eth_signTypedData_v4', 
+          params: msgParams
+        });
+        console.log(sign);
+
+        let { r, s, v } = await this.getSignatureParameters(sign);
+   
+        console.log(r);
+        console.log(s);
+        console.log(v);
+
+
+        let output = await this.sendSignedTransaction(userAddress, functionSignature, r, s, v);
+        console.log(output);
+
+
+
+
+        // this.state.web3.currentProvider.send(
+        //   {
+        //     jsonrpc: "2.0",
+        //     id: 999999999999,
+        //     method: "eth_signTypedData_v4",
+        //     params: [userAddress, dataToSign]
+        //   },
+        //   function(error, response) {
+        //     console.info(`User signature is ${response.result}`);
+        //     if (error || (response && response.error)) {
+        //       console.log("Could not get user signature");
+        //     } else if (response && response.result) {
+        //       let { r, s, v } = this.getSignatureParameters(response.result);
+        //       console.log(userAddress);
+        //       console.log(JSON.stringify(message));
+        //       console.log(message);
+        //       console.log(this.getSignatureParameters(response.result));
+
+        //       const recovered = sigUtil.recoverTypedSignature_v4({
+        //         data: JSON.parse(dataToSign),
+        //         sig: response.result
+        //       });
+        //       console.log(`Recovered ${recovered}`);
+        //       this.sendSignedTransaction(userAddress, functionSignature, r, s, v);
+        //     }
+        //   }
+        // );
       } else {
         console.log("Sending normal transaction");
         // contract.methods
@@ -239,6 +372,9 @@ class App extends Component {
     var v = "0x".concat(signature.slice(130, 132));
     v = this.state.web3.utils.hexToNumber(v);
     if (![27, 28].includes(v)) v += 27;
+    console.log(r);
+    console.log(s);
+    console.log(v);
     return {
       r: r,
       s: s,
@@ -248,20 +384,21 @@ class App extends Component {
 
 
   async sendSignedTransaction(userAddress, functionData, r, s, v) {
-    if (this.state.web3 && this.state.ethSwap) {
-      try {
-        let gasLimit = await this.state.ethSwap.methods
-          .executeMetaTransaction(userAddress, functionData, r, s, v)
-          .estimateGas({ from: userAddress });
+  console.log(userAddress);
+  console.log(functionData);
+  console.log(r);
+        // let gasLimit = await this.state.ethSwap.methods
+        //   .executeMetaTransaction(userAddress, functionData, r, s, v)
+        //  .estimateGas({from: "0x720E1fa107A1Df39Db4E78A3633121ac36Bec132"});
         let gasPrice = await this.state.web3.eth.getGasPrice();
-        console.log(gasLimit);
+        // console.log(gasLimit);
         console.log(gasPrice);
-        let tx = this.state.ethSwap.methods
+        let tx = await this.state.ethSwap.methods
           .executeMetaTransaction(userAddress, functionData, r, s, v)
           .send({
             from: userAddress,
-            gasPrice:gasPrice,
-            gasLimit:gasLimit
+            gasPrice:this.state.web3.utils.toHex(gasPrice),
+            gasLimit:this.state.web3.utils.toHex(500000)
           });
 
         tx.on("transactionHash", function(hash) {
@@ -276,20 +413,47 @@ class App extends Component {
       } catch (error) {
         console.log(error);
       }
-    }
-  };
+    
+  
 
-  // async onSubmit() {
-  //   console.log(this.state.accounts);
+  // async currentProviders(dataToSign) {
+  //   console.log(dataToSign);
+  //      let functionSignature = "0xa9059cbb000000000000000000000000fbfdfbd11049907276f15cd1dcb94a47a62d60740000000000000000000000000000000000000000000000000000000000000001";
+  //      let userAddress = "0x720E1fa107A1Df39Db4E78A3633121ac36Bec132";
+  //       this.state.web3.currentProvider.send(
+  //         {
+  //           jsonrpc: "2.0",
+  //           id: 999999999999,
+  //           method: "eth_signTypedData_v4",
+  //           params: [userAddress, dataToSign]
+  //         },
+  //         function(error, response) {
+  //           console.info(`User signature is ${response.result}`);
+  //           if (error || (response && response.error)) {
+  //             console.log("Could not get user signature");
+  //           } else if (response && response.result) {
+  //             let { r, s, v } = this.getSignatureParameters(response.result);
+  //             console.log(userAddress);
+  //             // console.log(JSON.stringify(message));
+  //             // console.log(message);
+  //             console.log(this.getSignatureParameters(response.result));
 
-  //   console.log(this.state.amount);
+  //             const recovered = sigUtil.recoverTypedSignature_v4({
+  //               data: JSON.parse(dataToSign),
+  //               sig: response.result
+  //             });
+  //             console.log(`Recovered ${recovered}`);
+  //             this.sendSignedTransaction(userAddress, functionSignature, r, s, v);
+  //           }
+  //         }
+  //       );
   // }
-  async onSubmit1() {
+  // async onSubmit1() {
 
-    console.log(this.state.accounts1);
+  //   console.log(this.state.accounts1);
 
-    console.log(this.state.amount1);
-  }
+  //   console.log(this.state.amount1);
+  // }
 
   handleChange(evt) {
     this.setState({ [evt.target.name]: evt.target.value })
@@ -318,7 +482,7 @@ class App extends Component {
         
        <h5>Transfer</h5>
           <Form.Field
-      control={Input}
+      control={Input} 
       onChange={this.handleChange}
       name="accounts">
       <label>Address</label>
@@ -356,8 +520,13 @@ class App extends Component {
           <Button variant="contained" color="primary" onClick={this.onSubmit1}>
               Submit
             </Button>
+            <Button variant="contained" color="primary" onClick={() => this.getSignatureParameters("0x99f21e5952647c79c777dcf96123ec2b91ee5c1b4b12fca4a729b2d3565a8a6a7ac5cdd4f31066f18ab2f421f15e508493d5064258f7b54db1de92997535610d1b")}>
+              Submit
+            </Button>
+         
 
            </div>
+           
             </main>
           </div>
         </div>
