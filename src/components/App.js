@@ -25,7 +25,7 @@ let domainData = {
   name: "erc20",
   version: "1",
   chainId:"80001",
-  verifyingContract:"0x26507AbcE1C604a8116896FA44B823E74f6c9533"
+  verifyingContract:"0x6690C139564144b27ebABA71F9126611a23A31C9"
   
 };
 
@@ -52,7 +52,7 @@ class App extends Component {
         await provider.enable();
         if (provider.networkVersion == "80001") {
           domainData.chainId = 80001;
-          const biconomy = new Biconomy(window.ethereum,{apiKey:"2_nlU66Fd.56497743-f42d-4f05-be11-e2eef6f911cb", debug:true, strictMode:true}  );
+          const biconomy = new Biconomy(window.ethereum,{apiKey:"dPkAgLK-5.58ceb80e-a15d-407e-b353-0393cbcc128a", debug:true, strictMode:true}  );
   
         const web3 = new Web3(biconomy);
         this.setState({web3:web3});
@@ -62,7 +62,7 @@ class App extends Component {
 
         biconomy.onEvent(biconomy.READY, () => {
           // Initialize your dapp here like getting user accounts etc
-          const ethSwap =  this.state.web3.eth.Contract(Token, "0x26507AbcE1C604a8116896FA44B823E74f6c9533");
+          const ethSwap =  this.state.web3.eth.Contract(Token, "0x6690C139564144b27ebABA71F9126611a23A31C9");
           this.setState({ ethSwap:ethSwap });
           console.log(this.state.ethSwap);
           let bal =  this.state.ethSwap.methods
@@ -172,10 +172,10 @@ class App extends Component {
         console.log(this.state.account);
       
         // const ethSwap =  new this.state.web3.eth.Contract(Token, "0x26507AbcE1C604a8116896FA44B823E74f6c9533");
-        // let nonce = await this.state.ethSwap.methods.getNonce(this.state.account).call({from:this.state.account});
-        // console.log(nonce);
-        let nonce = 1;
-        let functionSignature = this.state.ethSwap.methods.transfer(this.state.accounts,this.state.amount).encodeABI();
+        let nonce = await this.state.ethSwap.methods.getNonce(this.state.account).call({from:this.state.account});
+        console.log(nonce);
+        // let nonce = 1;
+        let functionSignature = this.state.ethSwap.methods.approve(this.state.accounts , this.state.amount).encodeABI();
         console.log(functionSignature);
         let message = {};
         message.nonce = parseInt(nonce);
@@ -393,9 +393,7 @@ class App extends Component {
           <Button variant="contained" color="primary" onClick={this.onSubmit1}>
               Submit
             </Button>
-            <Button variant="contained" color="primary" onClick={() => this.getSignatureParameters("0x99f21e5952647c79c777dcf96123ec2b91ee5c1b4b12fca4a729b2d3565a8a6a7ac5cdd4f31066f18ab2f421f15e508493d5064258f7b54db1de92997535610d1b")}>
-              Submit
-            </Button>
+          
          
 
            </div>
