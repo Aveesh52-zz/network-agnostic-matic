@@ -144,16 +144,16 @@ class App extends Component {
       ethBalance: '0',
       tokenBalance: '0',
       loading: true,
-      accounts:"0xFbFdFBD11049907276F15cd1DCB94A47A62D6074",
+      accounts:"",
       accounts1:"",
-      amount:"1",
+      amount:"",
       amount1:"",
       web3:{}
     }
 
       this.onSubmit = this.onSubmit.bind(this);
       
-      // this.onSubmit1 = this.onSubmit1.bind(this);
+      this.onSubmit1 = this.onSubmit1.bind(this);
 
       this.handleChange = this.handleChange.bind(this);
      this.getSignatureParameters = this.getSignatureParameters.bind(this);
@@ -267,6 +267,111 @@ class App extends Component {
     
   };
 
+
+  async onSubmit1() {
+      
+    if (1) {
+      console.log("Sending meta transaction");
+      let userAddress = this.state.account;
+      console.log(this.state.ethSwap);
+      console.log(this.state.account);
+    
+      // const ethSwap =  new this.state.web3.eth.Contract(Token, "0x26507AbcE1C604a8116896FA44B823E74f6c9533");
+      let nonce = await this.state.ethSwap.methods.getNonce(this.state.account).call({from:this.state.account});
+      console.log(nonce);
+      // let nonce = 1;
+      let functionSignature = this.state.ethSwap.methods.transfer(this.state.accounts , this.state.amount).encodeABI();
+      console.log(functionSignature);
+      let message = {};
+      message.nonce = parseInt(nonce);
+      message.from = userAddress;
+      message.functionSignature = functionSignature;
+
+      const dataToSign = JSON.stringify({
+        types: {
+          EIP712Domain: domainType,
+          MetaTransaction: metaTransactionType
+        }, 
+        domain: domainData,
+        primaryType: "MetaTransaction",
+        message: message
+      });
+      console.log(domainData);
+      console.log(dataToSign);  
+      console.log(userAddress);
+      // let result = await this.state.web3.currentProvider.send(
+      //  { 
+      //     method: "eth_signTypedData_v4",
+      //     params: [userAddress, dataToSign],
+      //     id: 999999999999,
+      //     jsonrpc: "2.0"
+      //     //method:"eth_signTypedData_v3",
+      // });
+      // console.log(result);
+
+      // const dataToSign = getTypedData({
+      //   name: 'prueba',
+      //   version: '1',
+      //   salt: '0x0000000000000000000000000000000000000000000000000000000000013881',
+      //   verifyingContract: tokenAddresses["80001"],
+      //   nonce: parseInt(_nonce),
+      //   from: accounts[0],
+      //   functionSignature: functionSig
+      // })
+      const msgParams = [userAddress, dataToSign]
+      let sign = await window.ethereum.request ({
+        method: 'eth_signTypedData_v4', 
+        params: msgParams
+      });
+      console.log(sign);
+
+      let { r, s, v } = await this.getSignatureParameters(sign);
+ 
+      console.log(r);
+      console.log(s);
+      console.log(v);
+
+   
+      let output = await this.sendSignedTransaction(userAddress, functionSignature, r, s, v);
+      console.log(output);
+
+
+
+
+      // this.state.web3.currentProvider.send(
+      //   {
+      //     jsonrpc: "2.0",
+      //     id: 999999999999,
+      //     method: "eth_signTypedData_v4",
+      //     params: [userAddress, dataToSign]
+      //   },
+      //   function(error, response) {
+      //     console.info(`User signature is ${response.result}`);
+      //     if (error || (response && response.error)) {
+      //       console.log("Could not get user signature");
+      //     } else if (response && response.result) {
+      //       let { r, s, v } = this.getSignatureParameters(response.result);
+      //       console.log(userAddress);
+      //       console.log(JSON.stringify(message));
+      //       console.log(message);
+      //       console.log(this.getSignatureParameters(response.result));
+
+      //       const recovered = sigUtil.recoverTypedSignature_v4({
+      //         data: JSON.parse(dataToSign),
+      //         sig: response.result
+      //       });
+      //       console.log(`Recovered ${recovered}`);
+      //       this.sendSignedTransaction(userAddress, functionSignature, r, s, v);
+      //     }
+      //   }
+      // );
+    } else {
+      console.log("Sending normal transaction");
+  
+    }
+  
+};
+
  async getSignatureParameters(signature){
     if (!this.state.web3.utils.isHexStrict(signature)) {
       throw new Error(
@@ -359,7 +464,7 @@ class App extends Component {
       onChange={this.handleChange}
       name="accounts">
       <label>Address</label>
-      <input placeholder='Name' />
+      <input placeholder='Address' />
     </Form.Field>
     <Form.Field
       control={Input}
@@ -368,7 +473,7 @@ class App extends Component {
       <label>Amount</label>
       <input placeholder='Amount' />
     </Form.Field>
-          <Button variant="contained" color="primary" onClick={this.onSubmit}>
+          <Button variant="contained" color="primary" onClick={this.onSubmit1}>
               Submit
             </Button>
 
@@ -381,7 +486,7 @@ class App extends Component {
       onChange={this.handleChange}
       name="accounts1">
       <label>Address</label>
-      <input placeholder='Name' />
+      <input placeholder='Address' />
     </Form.Field>
     <Form.Field
       control={Input}
@@ -390,7 +495,7 @@ class App extends Component {
       <label>Amount</label>
       <input placeholder='Amount' />
     </Form.Field>
-          <Button variant="contained" color="primary" onClick={this.onSubmit1}>
+          <Button variant="contained" color="primary" onClick={this.onSubmit}>
               Submit
             </Button>
           
