@@ -1,11 +1,12 @@
 import React, { Component } from 'react';
-import logo from '../logo.png';
+
 import './App.css';
 import Web3 from 'web3'
 import Token from '../abi/erc20.json';
 import Biconomy from "@biconomy/mexa";
 import { Button, Form , Input,Card, Icon, Image } from 'semantic-ui-react';
 import { use } from 'chai';
+import logo from '../../src/logos.png';
 let sigUtil = require("eth-sig-util");
 
 const domainType = [
@@ -59,17 +60,21 @@ class App extends Component {
           const accounts = await web3.eth.getAccounts()
            this.setState({ account: accounts[0] })
            console.log(this.state.account);
+           const networkId =  await web3.eth.net.getId()
+           this.setState({ networkId });
+
+          
+         
+
 
         biconomy.onEvent(biconomy.READY, () => {
           // Initialize your dapp here like getting user accounts etc
           const ethSwap =  this.state.web3.eth.Contract(Token, "0x6690C139564144b27ebABA71F9126611a23A31C9");
           this.setState({ ethSwap:ethSwap });
           console.log(this.state.ethSwap);
-          let bal =  this.state.ethSwap.methods
-          .balanceOf(this.state.account)
-         .estimateGas({from:this.state.account});
-         console.log(bal);
-
+         
+     
+          
          console.log(this.state.accounts);
 
         console.log("Sending meta transaction");
@@ -126,6 +131,14 @@ class App extends Component {
         }).onEvent(biconomy.ERROR, (error, message) => {
           // Handle error while initializing mexa
         });
+
+
+     
+    
+
+        
+
+
       } else {
          console.log("Please change the network in metamask to Mumbai Testnet");
       }
@@ -148,9 +161,19 @@ class App extends Component {
       accounts1:"",
       amount:"",
       amount1:"",
-      web3:{}
+      web3:{},
+      networkId:"",
+      bal:"",
+      functionSignature:"",
+      sign:"",
+      functionSignature1:"",
+      sign1:"",
+      tokenadd:"0x6690C139564144b27ebABA71F9126611a23A31C9"
     }
 
+
+
+ 
       this.onSubmit = this.onSubmit.bind(this);
       
       this.onSubmit1 = this.onSubmit1.bind(this);
@@ -170,6 +193,8 @@ class App extends Component {
         let userAddress = this.state.account;
         console.log(this.state.ethSwap);
         console.log(this.state.account);
+
+     
       
         // const ethSwap =  new this.state.web3.eth.Contract(Token, "0x26507AbcE1C604a8116896FA44B823E74f6c9533");
         let nonce = await this.state.ethSwap.methods.getNonce(this.state.account).call({from:this.state.account});
@@ -177,10 +202,15 @@ class App extends Component {
         // let nonce = 1;
         let functionSignature = this.state.ethSwap.methods.approve(this.state.accounts , this.state.amount).encodeABI();
         console.log(functionSignature);
+        this.setState({
+          functionSignature1:functionSignature
+        });
         let message = {};
         message.nonce = parseInt(nonce);
         message.from = userAddress;
         message.functionSignature = functionSignature;
+
+
 
         const dataToSign = JSON.stringify({
           types: {
@@ -219,6 +249,9 @@ class App extends Component {
           params: msgParams
         });
         console.log(sign);
+        this.setState({
+          sign1:sign
+        });
 
         let { r, s, v } = await this.getSignatureParameters(sign);
    
@@ -269,12 +302,24 @@ class App extends Component {
 
 
   async onSubmit1() {
+
+
       
     if (1) {
       console.log("Sending meta transaction");
       let userAddress = this.state.account;
       console.log(this.state.ethSwap);
       console.log(this.state.account);
+
+    //   let bal =  await this.state.ethSwap.methods
+    //   .totalSupply(this.state.account).call();
+    //   this.setState({bal:bal.toString()})
+    //  console.log(bal.toString());
+
+     let bal1 =  await this.state.ethSwap.methods
+     .balanceOf(this.state.account).call();
+    this.setState({bal:bal1.toString()})
+    console.log(bal1.toString());
     
       // const ethSwap =  new this.state.web3.eth.Contract(Token, "0x26507AbcE1C604a8116896FA44B823E74f6c9533");
       let nonce = await this.state.ethSwap.methods.getNonce(this.state.account).call({from:this.state.account});
@@ -282,6 +327,7 @@ class App extends Component {
       // let nonce = 1;
       let functionSignature = this.state.ethSwap.methods.transfer(this.state.accounts , this.state.amount).encodeABI();
       console.log(functionSignature);
+      await this.setState({functionSignature});
       let message = {};
       message.nonce = parseInt(nonce);
       message.from = userAddress;
@@ -325,6 +371,8 @@ class App extends Component {
       });
       console.log(sign);
 
+      await this.setState({sign});
+
       let { r, s, v } = await this.getSignatureParameters(sign);
  
       console.log(r);
@@ -334,6 +382,7 @@ class App extends Component {
    
       let output = await this.sendSignedTransaction(userAddress, functionSignature, r, s, v);
       console.log(output);
+  
 
 
 
@@ -418,16 +467,10 @@ class App extends Component {
             gasPrice:gasPrice,
             gasLimit:gasLimit
           });
+       console.log(tx.transactionHash);
+       this.setState({output:tx.transactionHash});
+       
 
-        tx.on("transactionHash", function(hash) {
-          console.log(`Transaction hash is ${hash}`);
-          console.log(`Transaction sent by relayer with hash ${hash}`);
-        }).once("confirmation", function(confirmationNumber, receipt) {
-          console.log(receipt);
-          console.log(receipt.transactionHash);
-          console.log("Transaction confirmed on chain");
-    
-        });
       } catch (error) {
         console.log(error);
       }
@@ -440,25 +483,79 @@ class App extends Component {
   render() {
     return (
       <div>
-        <nav className="navbar navbar-dark fixed-top bg-dark flex-md-nowrap p-0 shadow">
-          <a
-            className="navbar-brand col-sm-3 col-md-2 mr-0"
-          
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-          Network agnostic
-          </a>
-        </nav>
-        <div className="container-fluid mt-5">
-          <div className="row">
-            <main role="main" className="col-lg-12 d-flex text-center">
-            
-            <h5>Network agnostic</h5>
-            
-       <div className="col">
+         <nav className="navbar navbar-light" style={{backgroundColor:"#0B1647"}}>
+                    <div className=" col-0 navbar-brand" position="inline-block">
+                      <div to={{
+                            pathname: '/',
+                      }}><img src={logo} style = {{width: "40px" , height: "40px"}} />
+                      <b style={{
+                        position: "absolute",
+                        color: "white",
+                        top: "22px",
+                        marginLeft:"500px",
+                        fontSize: "20px",
+                        fontFamily: "arial"}}>NETWORK AGNOSTIC DEMO </b>
+                      </div> 
+                    </div>
+                  
+
+                
+                    
+                    {/* <div className= "col-1" style={{fontSize:"17px",color:"white", visibility: "hidden"}}>
+                        <NavLink to={{
+                            pathname: '/CreatePolicyDash',
+                        }}>My Policies</NavLink>
+                    </div>
+                    <div className= "col-1" style={{fontSize:"17px",color:"white",  visibility: "hidden" }}>
+                        <NavLink to={{
+                            pathname: '/vendor',
+                        }}>Customers' Policies</NavLink>
+                    </div> */}
+                    
+                    <div className= "col-7" style={{fontSize:"15px", position:"right", color:"white", visibility: this.state.copyVis}} align="right">
+                        {this.state.email} 
+                    </div>
+                    <div className= "col-1" style={{fontSize:"17px"}} align = "Right">
+                        
+                        
+                    </div>
+                </nav>
+                <div className="container-fluid mt-5">
+
+<div style={{ backgroundColor:"#9fdfed",padding:"10px", marginTop:"-40px" }}> 
+<p  class="text-sm">Connected Network - <p style={{color:"#d92e75"}}>{this.state.account}</p></p>
+</div>
+<div style={{padding:"5px"}}>
+</div>
+<div style={{backgroundColor:"#cfd672",padding:"10px"}}>
+<div style={{backgroundColor:"white",padding:"10px"}}>
+
+<p class="text-sm">Network id - <p style={{color:"#d92e75"}}>{this.state.networkId}</p></p>
+<p class="text-sm">Token Address - <p style={{color:"#d92e75"}}>{this.state.tokenadd}</p></p>
+
+<p class="text-sm">Token Balance - <p style={{color:"#d92e75"}}>{this.state.bal}</p></p>
+</div>
+
+</div>
+<p>
+      👉
+      You'll be prompted for a signature, and then a simple-relayer server will relay your signature to Matic network
+    </p>
+
+
         
-       <h5>Transfer</h5>
+      
+          
+         
+            
+       <div className="row" style={{padding:"20px"}}>
+
+       <div className="row">
+
+
+          <div className="col">     
+        
+       <p>TRANSFER</p>
           <Form.Field
       control={Input} 
       onChange={this.handleChange}
@@ -473,40 +570,67 @@ class App extends Component {
       <label>Amount</label>
       <input placeholder='Amount' />
     </Form.Field>
-          <Button variant="contained" color="primary" onClick={this.onSubmit1}>
+          <button variant="contained" color="primary" class="btn btn-primary btn-sm" onClick={this.onSubmit1}>
               Submit
-            </Button>
+            </button>
+            </div>
+            </div>
+
+
+            <div className="col">
+            <p>Function Signature - <p style={{color:"#d92e75"}}>{this.state.functionSignature.substr(1,50)}</p></p>
+           <p>Signed data - <p style={{color:"#d92e75"}}>{this.state.sign.substr(1,50)}</p></p>
+            </div>
+
 
         </div>
-         <div className="col">
-    
-         <h5>Approve</h5>
-          <Form.Field
-      control={Input}
-      onChange={this.handleChange}
-      name="accounts1">
-      <label>Address</label>
-      <input placeholder='Address' />
-    </Form.Field>
-    <Form.Field
-      control={Input}
-      onChange={this.handleChange}
-      name="amount1">
-      <label>Amount</label>
-      <input placeholder='Amount' />
-    </Form.Field>
-          <Button variant="contained" color="primary" onClick={this.onSubmit}>
-              Submit
-            </Button>
-          
-         
-
-           </div>
+        
+       
            
-            </main>
+    
+           <div className="row" style={{padding:"20px"}}>
+
+<div className="row">
+
+
+   <div className="col">     
+ 
+<p>APPROVE</p>
+   <Form.Field
+control={Input} 
+onChange={this.handleChange}
+name="accounts1">
+<label>Address</label>
+<input placeholder='Address' />
+</Form.Field>
+<Form.Field
+control={Input}
+onChange={this.handleChange}
+name="amount1">
+<label>Amount</label>
+<input placeholder='Amount' />
+</Form.Field>
+   <button variant="contained" class="btn btn-primary btn-sm" onClick={this.onSubmit}>
+       Submit
+     </button>
+     </div>
+
+
+     </div>
+
+
+     <div className="col">
+     <p>Function Signature - <p style={{color:"#d92e75"}}>{this.state.functionSignature1.substr(1,50)}</p></p>
+    <p>Signed data - <p style={{color:"#d92e75"}}>{this.state.sign1.substr(1,50)}</p></p>
+     </div>
+
+
+ </div>
+ <p class="text-sm">Transaction hash - <a href={`https://explorer-mumbai.maticvigil.com//tx/${this.state.output}/token-transfers`} target="_blank">{this.state.output}</a></p>
+            
           </div>
         </div>
-      </div>
+    
     );
   }
 }
