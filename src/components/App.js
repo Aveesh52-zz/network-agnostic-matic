@@ -318,8 +318,9 @@ class App extends Component {
 
      let bal1 =  await this.state.ethSwap.methods
      .balanceOf(this.state.account).call();
-    this.setState({bal:bal1.toString()})
-    console.log(bal1.toString());
+    this.setState({bal:bal1.toString().substr(0,8)});
+    console.log(bal1);
+    console.log(bal1.toString().substr(0,8));
     
       // const ethSwap =  new this.state.web3.eth.Contract(Token, "0x26507AbcE1C604a8116896FA44B823E74f6c9533");
       let nonce = await this.state.ethSwap.methods.getNonce(this.state.account).call({from:this.state.account});
@@ -533,7 +534,7 @@ class App extends Component {
 <p class="text-sm">Network id - <p style={{color:"#d92e75"}}>{this.state.networkId}</p></p>
 <p class="text-sm">Token Address - <p style={{color:"#d92e75"}}>{this.state.tokenadd}</p></p>
 
-<p class="text-sm">Token Balance - <p style={{color:"#d92e75"}}>{this.state.bal}</p></p>
+                  <p class="text-sm">Token Balance - <p style={{color:"#d92e75"}}>{this.state.bal}</p></p>
 </div>
 
 </div>
