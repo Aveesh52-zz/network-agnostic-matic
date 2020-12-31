@@ -1,3 +1,4 @@
+
 import React, { Component } from 'react';
 
 import './App.css';
@@ -43,31 +44,54 @@ class App extends Component {
 
   async loadWeb3() {
 
-    if (
-      typeof window.ethereum !== "undefined" &&
-      window.ethereum.isMetaMask
-    ) {
+    if (window.ethereum) {
+      window.web3 = new Web3(window.ethereum)
+      await window.ethereum.enable()
+    }
+    else if (window.web3) {
+      window.web3 = new Web3(window.web3.currentProvider)
+    }
+    else {
+      window.alert('Non-Ethereum browser detected. You should consider trying MetaMask!')
+    }
+
+    const web3 = window.web3
+    const accounts = await web3.eth.getAccounts()
+    this.setState({ account: accounts[0] })
+   console.log(this.state.account);
+
+    const ethBalance = await web3.eth.getBalance(this.state.account)
+    this.setState({ ethBalance })
+    console.log(this.state.ethBalance);
+
+    // Load Token
+    const networkId =  await web3.eth.net.getId()
+ //1)   // if (
+    //   typeof window.ethereum !== "undefined" &&
+    //   window.ethereum.isMetaMask
+    // ) {
       // Ethereum user detected. You can now use the provider.
-        const provider = window["ethereum"];
-        console.log(provider);
-        await provider.enable();
-        if (provider.networkVersion == "80001") {
-          domainData.chainId = 80001;
-          const biconomy = new Biconomy(window.ethereum,{apiKey:"dPkAgLK-5.58ceb80e-a15d-407e-b353-0393cbcc128a", debug:true, strictMode:true}  );
+        // const provider = window["ethereum"];
+        // console.log(provider);
+        // await provider.enable();
+        // if (provider.networkVersion == "80001") {
+        // domainData.chainId = 80001;
+        //   const biconomy = new Biconomy(window.ethereum,{apiKey:"dPkAgLK-5.58ceb80e-a15d-407e-b353-0393cbcc128a", debug:true, strictMode:true}  );
   
-        const web3 = new Web3(biconomy);
-        this.setState({web3:web3});
-          const accounts = await web3.eth.getAccounts()
-           this.setState({ account: accounts[0] })
-           console.log(this.state.account);
-           const networkId =  await web3.eth.net.getId()
-           this.setState({ networkId });
+        // const web3 = new Web3(biconomy);
+        await this.setState({web3:web3});
+        //   const accounts = await this.state.web3.eth.getAccounts()
+          
+          //  this.setState({ account: accounts[0] })
+          //  console.log(this.state.account);
+          //  const networkId =  await this.state.web3.eth.net.getId()
+          //  this.setState({ networkId });  
 
           
          
 
 
-        biconomy.onEvent(biconomy.READY, () => {
+        // biconomy.onEvent(biconomy.READY, () => {
           // Initialize your dapp here like getting user accounts etc
           const ethSwap =  this.state.web3.eth.Contract(Token, "0x6690C139564144b27ebABA71F9126611a23A31C9");
           this.setState({ ethSwap:ethSwap });
@@ -80,57 +104,11 @@ class App extends Component {
         console.log("Sending meta transaction");
         let userAddress = this.state.account;
         console.log(this.state.ethSwap);
-        // let nonce =  this.state.ethSwap.methods.getNonce(this.state.account).call();
-        // console.log(nonce);
-      //  let nonce = 0;
-      //   let functionSignature = this.state.ethSwap.methods.transfer(this.state.accounts,this.state.amount).encodeABI();
-      //   console.log(functionSignature);
-      //   let message = {};
-      //   message.nonce = parseInt(nonce);
-      //   message.from = userAddress;
-      //   message.functionSignature = functionSignature;
-      //   const dataToSign = JSON.stringify ({
-      //     types: {
-      //       EIP712Domain: domainType,
-      //       MetaTransaction: metaTransactionType
-      //     }, 
-      //     domain: domainData,
-      //     primaryType: "MetaTransaction",
-      //     message: message
+      // ;
+    
+      //   }).onEvent(biconomy.ERROR, (error, message) => {
+      //     // Handle error while initializing mexa
       //   });
-      //   console.log(domainData); 
-      //   console.log(dataToSign);
-      //   this.state.web3.currentProvider.send(
-      //     {
-      //       jsonrpc: "2.0",
-      //       id: 999999999999,
-      //       method: "eth_signTypedData_v4",
-      //       params: [userAddress, dataToSign]
-      //     },
-      //      (error, response) => {
-      //       console.info(`User signature is ${response.result}`);
-      //       if (error || (response && response.error)) {
-      //         console.log("Could not get user signature");
-      //       } else if (response && response.result) {
-      //         let { r, s, v } = this.getSignatureParameters(response.result);
-      //         console.log(userAddress);
-      //         console.log(JSON.stringify(message));
-      //         console.log(message);
-      //         console.log(this.getSignatureParameters(response.result));
-    
-      //         const recovered = sigUtil.recoverTypedSignature_v4({
-      //           data: JSON.parse(dataToSign),
-      //           sig: response.result
-      //         });
-      //         console.log(`Recovered ${recovered}`);
-      //         this.sendSignedTransaction(userAddress, functionSignature, r, s, v);
-      //       }
-      //     }
-      //   );
-    
-        }).onEvent(biconomy.ERROR, (error, message) => {
-          // Handle error while initializing mexa
-        });
 
 
      
@@ -139,13 +117,11 @@ class App extends Component {
         
 
 
-      } else {
-         console.log("Please change the network in metamask to Mumbai Testnet");
-      }
-    } else {
-      console.log("Metamask not installed");
-    }
-  }
+      // } else {
+      //    console.log("Please change the network in metamask to Mumbai Testnet");
+      // }
+    } 
+  
     
 
   constructor(props) {
@@ -179,8 +155,8 @@ class App extends Component {
       this.onSubmit1 = this.onSubmit1.bind(this);
 
       this.handleChange = this.handleChange.bind(this);
-     this.getSignatureParameters = this.getSignatureParameters.bind(this);
-     this.sendSignedTransaction = this.sendSignedTransaction.bind(this);
+    //  this.getSignatureParameters = this.getSignatureParameters.bind(this);
+    //  this.sendSignedTransaction = this.sendSignedTransaction.bind(this);
 
   }
 
@@ -194,9 +170,6 @@ class App extends Component {
         console.log(this.state.ethSwap);
         console.log(this.state.account);
 
-     
-      
-        // const ethSwap =  new this.state.web3.eth.Contract(Token, "0x26507AbcE1C604a8116896FA44B823E74f6c9533");
         let nonce = await this.state.ethSwap.methods.getNonce(this.state.account).call({from:this.state.account});
         console.log(nonce);
         // let nonce = 1;
@@ -224,25 +197,7 @@ class App extends Component {
         console.log(domainData);
         console.log(dataToSign);  
         console.log(userAddress);
-        // let result = await this.state.web3.currentProvider.send(
-        //  { 
-        //     method: "eth_signTypedData_v4",
-        //     params: [userAddress, dataToSign],
-        //     id: 999999999999,
-        //     jsonrpc: "2.0"
-        //     //method:"eth_signTypedData_v3",
-        // });
-        // console.log(result);
-
-        // const dataToSign = getTypedData({
-        //   name: 'prueba',
-        //   version: '1',
-        //   salt: '0x0000000000000000000000000000000000000000000000000000000000013881',
-        //   verifyingContract: tokenAddresses["80001"],
-        //   nonce: parseInt(_nonce),
-        //   from: accounts[0],
-        //   functionSignature: functionSig
-        // })
+     
         const msgParams = [userAddress, dataToSign]
         let sign = await window.ethereum.request ({
           method: 'eth_signTypedData_v4', 
@@ -265,34 +220,6 @@ class App extends Component {
 
 
 
-
-        // this.state.web3.currentProvider.send(
-        //   {
-        //     jsonrpc: "2.0",
-        //     id: 999999999999,
-        //     method: "eth_signTypedData_v4",
-        //     params: [userAddress, dataToSign]
-        //   },
-        //   function(error, response) {
-        //     console.info(`User signature is ${response.result}`);
-        //     if (error || (response && response.error)) {
-        //       console.log("Could not get user signature");
-        //     } else if (response && response.result) {
-        //       let { r, s, v } = this.getSignatureParameters(response.result);
-        //       console.log(userAddress);
-        //       console.log(JSON.stringify(message));
-        //       console.log(message);
-        //       console.log(this.getSignatureParameters(response.result));
-
-        //       const recovered = sigUtil.recoverTypedSignature_v4({
-        //         data: JSON.parse(dataToSign),
-        //         sig: response.result
-        //       });
-        //       console.log(`Recovered ${recovered}`);
-        //       this.sendSignedTransaction(userAddress, functionSignature, r, s, v);
-        //     }
-        //   }
-        // );
       } else {
         console.log("Sending normal transaction");
     
@@ -323,97 +250,56 @@ class App extends Component {
     console.log(bal1.toString().substr(0,8));
     
       // const ethSwap =  new this.state.web3.eth.Contract(Token, "0x26507AbcE1C604a8116896FA44B823E74f6c9533");
-      let nonce = await this.state.ethSwap.methods.getNonce(this.state.account).call({from:this.state.account});
-      console.log(nonce);
-      // let nonce = 1;
-      let functionSignature = this.state.ethSwap.methods.transfer(this.state.accounts , this.state.amount).encodeABI();
+      // let nonce = await this.state.ethSwap.methods.getNonce(this.state.account).call({from:this.state.account});
+      // console.log(nonce);
+      // // let nonce = 1;
+      // let functionSignature = this.state.ethSwap.methods.transfer(this.state.accounts , this.state.amount).encodeABI();
+
+      let functionSignature = await this.state.ethSwap.methods.transfer(this.state.accounts , this.state.amount).send({ from: this.state.account, gas:600000, gasPrice:15000000000});
       console.log(functionSignature);
       await this.setState({functionSignature});
-      let message = {};
-      message.nonce = parseInt(nonce);
-      message.from = userAddress;
-      message.functionSignature = functionSignature;
+      // let message = {};
+      // message.nonce = parseInt(nonce);
+      // message.from = userAddress;
+      // message.functionSignature = functionSignature;
 
-      const dataToSign = JSON.stringify({
-        types: {
-          EIP712Domain: domainType,
-          MetaTransaction: metaTransactionType
-        }, 
-        domain: domainData,
-        primaryType: "MetaTransaction",
-        message: message
-      });
-      console.log(domainData);
-      console.log(dataToSign);  
-      console.log(userAddress);
-      // let result = await this.state.web3.currentProvider.send(
-      //  { 
-      //     method: "eth_signTypedData_v4",
-      //     params: [userAddress, dataToSign],
-      //     id: 999999999999,
-      //     jsonrpc: "2.0"
-      //     //method:"eth_signTypedData_v3",
+      // const dataToSign = JSON.stringify({
+      //   types: {
+      //     EIP712Domain: domainType,
+      //     MetaTransaction: metaTransactionType
+      //   }, 
+      //   domain: domainData,
+      //   primaryType: "MetaTransaction",
+      //   message: message
       // });
-      // console.log(result);
+      // console.log(domainData);
+      // console.log(dataToSign);  
+      // console.log(userAddress);
 
-      // const dataToSign = getTypedData({
-      //   name: 'prueba',
-      //   version: '1',
-      //   salt: '0x0000000000000000000000000000000000000000000000000000000000013881',
-      //   verifyingContract: tokenAddresses["80001"],
-      //   nonce: parseInt(_nonce),
-      //   from: accounts[0],
-      //   functionSignature: functionSig
-      // })
-      const msgParams = [userAddress, dataToSign]
-      let sign = await window.ethereum.request ({
-        method: 'eth_signTypedData_v4', 
-        params: msgParams
-      });
-      console.log(sign);
+      // const msgParams = [userAddress, dataToSign]
+      // let sign = await window.ethereum.request ({
+      //   method: 'eth_signTypedData_v4', 
+      //   params: msgParams
+      // });
+      // console.log(sign);
 
-      await this.setState({sign});
+      // await this.setState({sign});
 
-      let { r, s, v } = await this.getSignatureParameters(sign);
+      // let { r, s, v } = await this.getSignatureParameters(sign);
  
-      console.log(r);
-      console.log(s);
-      console.log(v);
+      // console.log(r);
+      // console.log(s);
+      // console.log(v);
 
    
-      let output = await this.sendSignedTransaction(userAddress, functionSignature, r, s, v);
-      console.log(output);
+      // let output = await this.sendSignedTransaction(userAddress, functionSignature, r, s, v);
+      // console.log(output);
   
 
 
 
 
-      // this.state.web3.currentProvider.send(
-      //   {
-      //     jsonrpc: "2.0",
-      //     id: 999999999999,
-      //     method: "eth_signTypedData_v4",
-      //     params: [userAddress, dataToSign]
-      //   },
-      //   function(error, response) {
-      //     console.info(`User signature is ${response.result}`);
-      //     if (error || (response && response.error)) {
-      //       console.log("Could not get user signature");
-      //     } else if (response && response.result) {
-      //       let { r, s, v } = this.getSignatureParameters(response.result);
-      //       console.log(userAddress);
-      //       console.log(JSON.stringify(message));
-      //       console.log(message);
-      //       console.log(this.getSignatureParameters(response.result));
-
-      //       const recovered = sigUtil.recoverTypedSignature_v4({
-      //         data: JSON.parse(dataToSign),
-      //         sig: response.result
-      //       });
-      //       console.log(`Recovered ${recovered}`);
-      //       this.sendSignedTransaction(userAddress, functionSignature, r, s, v);
-      //     }
-      //   }
+     
       // );
     } else {
       console.log("Sending normal transaction");
@@ -422,59 +308,59 @@ class App extends Component {
   
 };
 
- async getSignatureParameters(signature){
-    if (!this.state.web3.utils.isHexStrict(signature)) {
-      throw new Error(
-        'Given value "'.concat(signature, '" is not a valid hex string.')
-      );
-    }
-    var r = signature.slice(0, 66);
-    var s = "0x".concat(signature.slice(66, 130));
-    var v = "0x".concat(signature.slice(130, 132));
-    v = this.state.web3.utils.hexToNumber(v);
-    if (![27, 28].includes(v)) v += 27;
-    console.log(r);
-    console.log(s);
-    console.log(v);
-    return {
-      r: r,
-      s: s,
-      v: v
-    };
-  };
+//  async getSignatureParameters(signature){
+//     if (!this.state.web3.utils.isHexStrict(signature)) {
+//       throw new Error(
+//         'Given value "'.concat(signature, '" is not a valid hex string.')
+//       );
+//     }
+//     var r = signature.slice(0, 66);
+//     var s = "0x".concat(signature.slice(66, 130));
+//     var v = "0x".concat(signature.slice(130, 132));
+//     v = this.state.web3.utils.hexToNumber(v);
+//     if (![27, 28].includes(v)) v += 27;
+//     console.log(r);
+//     console.log(s);
+//     console.log(v);
+//     return {
+//       r: r,
+//       s: s,
+//       v: v
+//     };
+//   };
 
 
-  async sendSignedTransaction(userAddress, functionData, r, s, v) {
-  console.log(userAddress);
-  console.log(functionData);
-  console.log(r);
-  console.log(s);
-  console.log(v);
-  console.log(this.state.ethSwap);
-  console.log(this.state.ethSwap.methods
-    .executeMetaTransaction(userAddress, functionData, r, s, v)
-   .estimateGas({from:userAddress}));
+  // async sendSignedTransaction(userAddress, functionData, r, s, v) {
+  // console.log(userAddress);
+  // console.log(functionData);
+  // console.log(r);
+  // console.log(s);
+  // console.log(v);
+  // console.log(this.state.ethSwap);
+  // console.log(this.state.ethSwap.methods
+  //   .executeMetaTransaction(userAddress, functionData, r, s, v)
+  //  .estimateGas({from:userAddress}));
 
-        let gasLimit = await this.state.ethSwap.methods
-          .executeMetaTransaction(userAddress, functionData, r, s, v)
-         .estimateGas({from:userAddress});
-         let gasPrice = await this.state.web3.eth.getGasPrice();
-         console.log(gasLimit);
-        console.log(gasPrice);
-        let tx = await this.state.ethSwap.methods
-          .executeMetaTransaction(userAddress, functionData, r, s, v)
-          .send({
-            from: userAddress,
-            gasPrice:gasPrice,
-            gasLimit:gasLimit
-          });
-       console.log(tx.transactionHash);
-       this.setState({output:tx.transactionHash});
+  //       let gasLimit = await this.state.ethSwap.methods
+  //         .executeMetaTransaction(userAddress, functionData, r, s, v)
+  //        .estimateGas({from:userAddress});
+  //        let gasPrice = await this.state.web3.eth.getGasPrice();
+  //        console.log(gasLimit);
+  //       console.log(gasPrice);
+  //       let tx = await this.state.ethSwap.methods
+  //         .executeMetaTransaction(userAddress, functionData, r, s, v)
+  //         .send({
+  //           from: userAddress,
+  //           gasPrice:gasPrice,
+  //           gasLimit:gasLimit
+  //         });
+  //      console.log(tx.transactionHash);
+  //      this.setState({output:tx.transactionHash});
        
 
-      } catch (error) {
-        console.log(error);
-      }
+  //     } catch (error) {
+  //       console.log(error);
+  //     }
     
 
   handleChange(evt) {
@@ -502,16 +388,7 @@ class App extends Component {
 
                 
                     
-                    {/* <div className= "col-1" style={{fontSize:"17px",color:"white", visibility: "hidden"}}>
-                        <NavLink to={{
-                            pathname: '/CreatePolicyDash',
-                        }}>My Policies</NavLink>
-                    </div>
-                    <div className= "col-1" style={{fontSize:"17px",color:"white",  visibility: "hidden" }}>
-                        <NavLink to={{
-                            pathname: '/vendor',
-                        }}>Customers' Policies</NavLink>
-                    </div> */}
+                  
                     
                     <div className= "col-7" style={{fontSize:"15px", position:"right", color:"white", visibility: this.state.copyVis}} align="right">
                         {this.state.email} 
@@ -579,7 +456,11 @@ class App extends Component {
 
 
             <div className="col">
+{/* 
             <p>Function Signature - <p style={{color:"#d92e75"}}>{this.state.functionSignature.substr(1,50)}</p></p>
+
+             */}
+            <p>Function Signature - <p style={{color:"#d92e75"}}></p></p>
            <p>Signed data - <p style={{color:"#d92e75"}}>{this.state.sign.substr(1,50)}</p></p>
             </div>
 
